@@ -9,6 +9,25 @@ function svgEl(etiqueta, atributos = {}) {
 }
 
 export function dibujarMapa(svg) {
+        const defs = svgEl( 'defs', {})
+const radialGradient = svgEl('radialGradient', {
+    id: 'esfera',
+    fx: '30%',
+    fy: '30%'
+})
+
+const stopClaro = svgEl('stop', {
+    offset: '0%',
+    'stop-color': '#7dd3fc'
+})
+const stopOscuro = svgEl('stop', {
+    offset: '100%',
+    'stop-color': '#1e3a8a'
+})
+
+radialGradient.append(stopClaro, stopOscuro)
+defs.append(radialGradient)
+svg.append(defs)
 
         const panel = document.getElementById('panel')
         const panelNombre = document.getElementById('panel-nombre')
@@ -33,6 +52,7 @@ export function dibujarMapa(svg) {
         })
         svg.append(capaConexiones, capaPuntos, capaNodos)
 
+    const meridianos = []
     for (const nodo of nodos){
         //transformamos las coordenadas del nodo
         const [x, y] = nodo.pos;
@@ -56,20 +76,46 @@ export function dibujarMapa(svg) {
             class: 'texto-svg'
         })
         textoNombre.textContent = nodo.nombre
-        //crea ell subtexto
+        //crea el subtexto
         const textoSub = svgEl('text',{
             y: radio + 44,
             'text-anchor': 'middle',
             class: 'texto-svg'
         })
         textoSub.textContent = nodo.sub
+        grupo.append(circulo)
 
-        grupo.append(circulo, textoNombre, textoSub)
+        // Creamos las elipses
+        const angulos = [0, 1.05, 2.1]
+        for (const angulo of angulos){
+            const elipse = svgEl('ellipse',{
+                class: 'alambre',
+                ry: radio
+            })
+            meridianos.push({elipse, radio, angulo, grupo})
+            grupo.append(elipse)
+        }
+        
+        //Calcular paralelos
+        const alturas = [-0.5, 0, 0.5]
+        for (const altura of alturas){
+            const elipse = svgEl('ellipse', {
+                class: 'alambre',
+                cy: radio * altura,
+                rx: radio * Math.sqrt(1-altura * altura),
+                ry: radio * 0.15
+            })
+            
+            grupo.append(elipse)
+        }
+
+        grupo.append( textoNombre, textoSub)
         capaNodos.append(grupo)
         const selector = `[data-origen="${nodo.id}"],[data-destino="${nodo.id}"]`
         grupo.addEventListener('mouseenter', () => {
             const lineas = svg.querySelectorAll(selector)
             svg.classList.add('enfocado')
+            grupo.classList.add('girando')
             for (const linea of lineas) {
                 linea.classList.add('activa')
             }    
@@ -77,6 +123,7 @@ export function dibujarMapa(svg) {
         grupo.addEventListener('mouseleave', () =>{
             const lineas = svg.querySelectorAll(selector)
             svg.classList.remove('enfocado')
+            grupo.classList.remove('girando')
             for (const linea of lineas) {
                 linea.classList.remove('activa')
             }
@@ -143,14 +190,21 @@ export function dibujarMapa(svg) {
         const desfase = Math.random() * duracion
         viajeros.push({camino, punto, largoCamino, duracion, desfase})
     }
-
+    let tiempoAnterior = 0
     function animar(tiempo) {
+        const delta = tiempo - tiempoAnterior
+        tiempoAnterior = tiempo
         for (const viajero of viajeros) {
            const fraccion = ((tiempo + viajero.desfase) % viajero.duracion) / viajero.duracion
            const distancia = fraccion * viajero.largoCamino
            const p = viajero.camino.getPointAtLength(distancia)
            viajero.punto.setAttribute('cx', p.x)
            viajero.punto.setAttribute('cy', p.y) 
+        }
+        for (const meridiano of meridianos){
+            const velocidad =  meridiano.grupo.classList.contains('girando') ? 0.004 : 0.0005
+            meridiano.angulo += delta * velocidad
+            meridiano.elipse.setAttribute('rx', meridiano.radio * Math.abs(Math.cos(meridiano.angulo)))
         }
         requestAnimationFrame(animar)
     }

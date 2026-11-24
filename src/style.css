@@ -8,7 +8,7 @@ svg {
 }
 
 .nodo-cuerpo {
-    fill: blue;
+    fill: url(#esfera);
     stroke: magenta;
     stroke-width: 2;
 }
