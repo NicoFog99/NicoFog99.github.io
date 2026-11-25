@@ -29,15 +29,25 @@ radialGradient.append(stopClaro, stopOscuro)
 defs.append(radialGradient)
 svg.append(defs)
 
-        const panel = document.getElementById('panel')
         const panelNombre = document.getElementById('panel-nombre')
         const panelDescripcion = document.getElementById('panel-descripcion')
         const panelStack = document.getElementById('panel-stack')
         const panelEnlaces = document.getElementById('panel-enlaces')
+        const escenario = document.querySelector('.escenario')
 
         const boton = document.getElementById('panel-cerrar')
-        boton.addEventListener ('click', () =>{
-            panel.hidden = true
+
+        //funcion para quitar el panel
+        function vaciarPanel(){
+            escenario.classList.remove('abierto')
+        }
+
+        boton.addEventListener ('click', vaciarPanel)
+
+        document.addEventListener('click', (evento) => {
+            if (! evento.target.closest('#panel') && ! evento.target.closest('.nodo')) {
+                vaciarPanel()
+            }
         })
 
         const capaPuntos = svgEl ('g',{ 
@@ -147,8 +157,8 @@ svg.append(defs)
                     a.rel = 'noopener'
                     panelEnlaces.append(a)
                 }
-
-            panel.hidden = false
+            
+            escenario.classList.add('abierto')
         })}
     }
 
